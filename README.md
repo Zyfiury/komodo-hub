@@ -51,13 +51,8 @@ These accounts are created by `prisma/seed.ts` so teachers/students/admins can l
 - Public pages: `/library`, `/campaigns`, `/species` (approved items only).
 - Protected dashboards enforce role + organisation boundaries.
 
-## Git remote
+## Repository
 
-After you create a GitHub repository:
+Public URL: [github.com/Zyfiury/komodo-hub](https://github.com/Zyfiury/komodo-hub)
 
-```bash
-git remote add origin https://github.com/YOUR_USER/YOUR_REPO.git
-git push -u origin master
-```
-
-Use `git branch -M main` and `git push -u origin main` if you prefer the branch name `main`.
+Clone: `git clone https://github.com/Zyfiury/komodo-hub.git`
