@@ -1,0 +1,296 @@
+// Komodo Hub — SQLite locally. For PostgreSQL: provider = "postgresql", same string field values.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Organisation {
+  id                     String   @id @default(cuid())
+  name                   String
+  slug                   String   @unique
+  /// FOUNDATION | SCHOOL | COMMUNITY
+  type                   String
+  /// ACTIVE | ARCHIVED | SUSPENDED
+  status                 String   @default("ACTIVE")
+  /// When true, public school/org profile and approved school-scoped library items may be shown
+  publicProfile          Boolean  @default(false)
+  description            String   @default("")
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  users                  User[]
+  accessCodes            AccessCode[] @relation("SchoolAccessCodes")
+  programmes             Programme[]
+  libraryItems           LibraryItem[]
+  sightingReports        SightingReport[]
+  subscriptions          Subscription[]
+  campaignParticipations CampaignParticipation[]
+  messages               Message[]
+}
+
+model User {
+  id               String       @id @default(cuid())
+  email            String       @unique
+  passwordHash     String
+  name             String
+  /// FOUNDATION_ADMIN | SCHOOL_ADMIN | TEACHER | STUDENT | COMMUNITY_ADMIN | COMMUNITY_MEMBER
+  role             String
+  /// ACTIVE | INACTIVE
+  status           String       @default("ACTIVE")
+  organisationId   String
+  organisation     Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  accessCodesCreated AccessCode[]           @relation("AccessCodeCreator")
+  programmesOwned    Programme[]            @relation("ProgrammeOwner")
+  assignments        ActivityAssignment[]   @relation("StudentAssignments")
+  submissions        Submission[]
+  teacherNotes       TeacherNote[]          @relation("TeacherNotes")
+  sightingsReported  SightingReport[]       @relation("SightingReporter")
+  sightingsReviewed  SightingReport[]       @relation("SightingReviewer")
+  libraryAuthored    LibraryItem[]          @relation("LibraryAuthor")
+  libraryReviewed    LibraryItem[]          @relation("LibraryReviewer")
+  messagesSent       Message[]              @relation("MessagesSent")
+  messagesReceived   Message[]              @relation("MessagesReceived")
+  auditLogs          AuditLog[]
+  mediaUploaded      MediaAsset[]
+  campaignsCreated   Campaign[]             @relation("CampaignCreator")
+}
+
+model AccessCode {
+  id                   String       @id @default(cuid())
+  code                 String       @unique
+  schoolOrganisationId String
+  school               Organisation @relation("SchoolAccessCodes", fields: [schoolOrganisationId], references: [id], onDelete: Cascade)
+  createdById          String
+  createdBy            User         @relation("AccessCodeCreator", fields: [createdById], references: [id])
+  expiresAt            DateTime?
+  maxUses              Int          @default(50)
+  usedCount            Int          @default(0)
+  createdAt            DateTime     @default(now())
+}
+
+model Programme {
+  id             String       @id @default(cuid())
+  organisationId String
+  organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  ownerId        String
+  owner          User         @relation("ProgrammeOwner", fields: [ownerId], references: [id])
+  title          String
+  description    String       @default("")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  activities     Activity[]
+}
+
+model Activity {
+  id          String   @id @default(cuid())
+  programmeId String
+  programme   Programme @relation(fields: [programmeId], references: [id], onDelete: Cascade)
+  title       String
+  description String   @default("")
+  dueDate     DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  assignments ActivityAssignment[]
+}
+
+model ActivityAssignment {
+  id          String   @id @default(cuid())
+  activityId  String
+  activity    Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  studentId   String
+  student     User     @relation("StudentAssignments", fields: [studentId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  submissions Submission[]
+
+  @@unique([activityId, studentId])
+}
+
+model Submission {
+  id              String   @id @default(cuid())
+  assignmentId    String
+  assignment      ActivityAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  studentId       String
+  student         User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  content         String   @default("")
+  /// PENDING | REVIEWED | NEEDS_REVISION
+  reviewState     String   @default("PENDING")
+  teacherFeedback String   @default("")
+  mediaAssetId    String?
+  mediaAsset      MediaAsset? @relation(fields: [mediaAssetId], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  teacherNotes    TeacherNote[]
+}
+
+model TeacherNote {
+  id           String     @id @default(cuid())
+  submissionId String
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  teacherId    String
+  teacher      User       @relation("TeacherNotes", fields: [teacherId], references: [id])
+  body         String
+  createdAt    DateTime   @default(now())
+}
+
+model Species {
+  id                String    @id @default(cuid())
+  name              String
+  scientificName    String    @default("")
+  description       String    @default("")
+  conservationNotes String    @default("")
+  /// DRAFT | PENDING | APPROVED | FLAGGED | REJECTED
+  publicationState  String    @default("PENDING")
+  reviewedById      String?
+  reviewedAt        DateTime?
+  reviewReason      String    @default("")
+  imageAssetId      String?
+  imageAsset        MediaAsset? @relation(fields: [imageAssetId], references: [id])
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  sightings         SightingReport[]
+}
+
+model SightingReport {
+  id              String    @id @default(cuid())
+  reporterId      String
+  reporter        User      @relation("SightingReporter", fields: [reporterId], references: [id])
+  organisationId  String
+  organisation    Organisation @relation(fields: [organisationId], references: [id])
+  speciesId       String?
+  species         Species?  @relation(fields: [speciesId], references: [id])
+  speciesFreeText String    @default("")
+  observedAt      DateTime
+  locationLabel   String    @default("")
+  latitude        Float?
+  longitude       Float?
+  description     String    @default("")
+  /// DRAFT | SUBMITTED | PENDING | APPROVED | REJECTED
+  workflowState   String    @default("DRAFT")
+  reviewedById    String?
+  reviewedBy      User?     @relation("SightingReviewer", fields: [reviewedById], references: [id])
+  reviewedAt      DateTime?
+  reviewNote      String    @default("")
+  mediaAssetId    String?
+  mediaAsset      MediaAsset? @relation(fields: [mediaAssetId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model MediaAsset {
+  id           String   @id @default(cuid())
+  filename     String
+  storedPath   String
+  mimeType     String
+  uploadedById String
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+  createdAt    DateTime @default(now())
+  submissions  Submission[]
+  sightings    SightingReport[]
+  species      Species[]
+  libraryItems LibraryItem[]
+}
+
+model LibraryItem {
+  id             String   @id @default(cuid())
+  organisationId String
+  organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  authorId       String?
+  author         User?    @relation("LibraryAuthor", fields: [authorId], references: [id])
+  /// ARTICLE | ESSAY | REPORT | UPLOAD | CONTRIBUTION
+  type           String
+  title          String
+  body           String   @default("")
+  /// PUBLIC | SCHOOL_PUBLIC | ORG_INTERNAL
+  audience       String   @default("PUBLIC")
+  /// DRAFT | PENDING | APPROVED | FLAGGED | REJECTED
+  state          String   @default("DRAFT")
+  reviewedById   String?
+  reviewedBy     User?    @relation("LibraryReviewer", fields: [reviewedById], references: [id])
+  reviewedAt     DateTime?
+  reviewReason   String   @default("")
+  mediaAssetId   String?
+  mediaAsset     MediaAsset? @relation(fields: [mediaAssetId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Campaign {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  summary     String   @default("")
+  body        String   @default("")
+  /// DRAFT | PUBLISHED | CLOSED
+  status      String   @default("DRAFT")
+  isPublic    Boolean  @default(false)
+  startDate   DateTime?
+  endDate     DateTime?
+  createdById String
+  createdBy   User     @relation("CampaignCreator", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  participants CampaignParticipation[]
+}
+
+model CampaignParticipation {
+  id             String       @id @default(cuid())
+  campaignId     String
+  campaign       Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  organisationId String
+  organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  joinedAt       DateTime     @default(now())
+
+  @@unique([campaignId, organisationId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  organisationId String
+  organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  fromUserId     String
+  fromUser       User         @relation("MessagesSent", fields: [fromUserId], references: [id])
+  toUserId       String
+  toUser         User         @relation("MessagesReceived", fields: [toUserId], references: [id])
+  body           String
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+}
+
+model Subscription {
+  id             String    @id @default(cuid())
+  organisationId String    @unique
+  organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  /// ACTIVE | PAST_DUE | CANCELLED | TRIAL
+  status         String    @default("TRIAL")
+  planLabel      String    @default("standard")
+  renewsAt       DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model TelemetryEvent {
+  id             String   @id @default(cuid())
+  type           String
+  payload        String   @default("{}")
+  organisationId String?
+  userId         String?
+  createdAt      DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String
+  actor      User     @relation(fields: [actorId], references: [id])
+  action     String
+  targetType String
+  targetId   String
+  metadata   String   @default("{}")
+  createdAt  DateTime @default(now())
+}

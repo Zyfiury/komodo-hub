@@ -1,0 +1,19 @@
+<svg width="640" height="420" viewBox="0 0 640 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="50" y1="40" x2="610" y2="390" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0ea5e9" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#22c55e" stop-opacity="0.12"/>
+    </linearGradient>
+  </defs>
+  <rect x="0.5" y="0.5" width="639" height="419" rx="28" fill="url(#bg)" stroke="#e5e7eb"/>
+  <g opacity="0.78" fill="#0f172a">
+    <!-- abstract bird in flight -->
+    <path d="M188 250c78-70 162-96 252-78 18 4 34 10 48 18-32 4-60 18-84 44 10-28 2-48-26-60-60-24-122-4-190 62z"/>
+    <path d="M452 190c-14 10-26 24-36 42 34-10 70-6 108 14-18-24-42-44-72-56z"/>
+  </g>
+  <g opacity="0.25" stroke="#0f172a" stroke-width="3">
+    <path d="M96 318c70-40 152-60 246-60 90 0 170 18 238 52" stroke-linecap="round"/>
+    <path d="M134 154c84-34 170-44 258-30" stroke-linecap="round"/>
+  </g>
+</svg>
+
