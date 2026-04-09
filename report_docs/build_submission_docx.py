@@ -40,6 +40,99 @@ def fix_encoding(doc: Document) -> None:
             p.text = p.text.replace("\ufffd", "'")
 
 
+def insert_apa7_note_after_references_heading(doc: Document) -> None:
+    note = "The reference list follows American Psychological Association (APA) style, 7th edition."
+    if note in "\n".join(p.text for p in doc.paragraphs):
+        return
+    for p in doc.paragraphs:
+        if p.text.strip() == "REFERENCES":
+            insert_paragraph_after(p, note)
+            return
+
+
+def convert_existing_reference_line_to_apa7(text: str) -> str | None:
+    """Map known Coventry/Harvard-style lines to APA 7 reference list entries. Returns None if unknown."""
+    t = text.strip()
+    if not t:
+        return None
+    if t.startswith("Hapsara, M."):
+        return (
+            "Hapsara, M. (2023). Komodo Hub: A digital platform for community-supported animal conservation "
+            "[Teaching case study]. Coventry University."
+        )
+    if t.startswith("Talekar, A. (2025c)"):
+        return (
+            "Talekar, A. (2025c). 5005CMD how to produce your project report [Unpublished course handout]. "
+            "Coventry University."
+        )
+    if t.startswith("Talekar, A. (2025a)"):
+        return (
+            "Talekar, A. (2025a). 5005CMD how to manage your team and project [Unpublished course handout]. "
+            "Coventry University."
+        )
+    if t.startswith("Talekar, A. (2025b)"):
+        return (
+            "Talekar, A. (2025b). 5005CMD how to perform your role [Unpublished course handout]. Coventry University."
+        )
+    if t.startswith("Talekar, A. (2025d)"):
+        return (
+            "Talekar, A. (2025d). 5005CMD student assignment brief 2025/26 [Unpublished course handout]. "
+            "Coventry University."
+        )
+    if t.startswith("International Organisation for Standardization") or t.startswith(
+        "International Organization for Standardization"
+    ):
+        return (
+            "International Organization for Standardization. (2019). ISO 9241-210:2019 Ergonomics of human-system "
+            "interaction - Part 210: Human-centred design for interactive systems. "
+            "https://www.iso.org/standard/77520.html"
+        )
+    if t.startswith("Vercel") and "nextjs.org" in t:
+        return "Vercel. (2026). Next.js documentation. https://nextjs.org/docs"
+    # Already APA-shaped lines we added previously — normalise retrieval wording
+    if t.startswith("Schwaber, K.") and "scrum guide" in t.lower():
+        return (
+            "Schwaber, K., & Sutherland, J. (2020). The scrum guide. Scrum Guides. "
+            "https://scrumguides.org/scrum-guide.html"
+        )
+    if t.startswith("Prisma") and "prisma.io" in t:
+        return "Prisma. (2026). Prisma ORM documentation. https://www.prisma.io/docs"
+    if t.startswith("OWASP"):
+        return (
+            "OWASP Foundation. (2023). Password storage cheat sheet. OWASP Cheat Sheet Series. "
+            "https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html"
+        )
+    if t.startswith("W3C") and "WCAG" in t:
+        return (
+            "W3C. (2023). Web content accessibility guidelines (WCAG) 2.2. W3C. https://www.w3.org/TR/WCAG22/"
+        )
+    if t.startswith("IUCN"):
+        return "IUCN. (2024). The IUCN red list of threatened species. https://www.iucnredlist.org/"
+    if t.startswith("Sommerville, I.") or t.startswith("Somerville, I."):
+        return "Sommerville, I. (2016). Software engineering (10th ed.). Pearson Education."
+    if t.startswith("Nielsen, J."):
+        return (
+            "Nielsen, J. (2012). Usability 101: Introduction to usability. Nielsen Norman Group. "
+            "https://www.nngroup.com/articles/usability-101-introduction-to-usability/"
+        )
+    return None
+
+
+def apply_apa7_reference_list(doc: Document) -> None:
+    in_refs = False
+    for p in doc.paragraphs:
+        raw = p.text.strip()
+        if raw == "REFERENCES":
+            in_refs = True
+            continue
+        if in_refs and raw == "APPENDICES":
+            break
+        if in_refs and raw:
+            converted = convert_existing_reference_line_to_apa7(p.text)
+            if converted is not None:
+                p.text = converted
+
+
 def main() -> None:
     base = os.path.dirname(os.path.abspath(__file__))
     src = os.path.join(base, "Omar_Zakhama_14498572_SUBMIT_READY_CITATIONS.docx")
@@ -48,9 +141,15 @@ def main() -> None:
     out = os.path.join(base, "Omar_Zakhama_14498572_SUBMIT_READY_SUBMISSION.docx")
     shot_dir = os.path.join(base, "appendix_screenshots")
 
-    shutil.copy2(src, out)
+    try:
+        shutil.copy2(src, out)
+    except OSError:
+        out = os.path.join(base, "Omar_Zakhama_14498572_SUBMIT_READY_SUBMISSION_APA7.docx")
+        shutil.copy2(src, out)
     doc = Document(out)
     fix_encoding(doc)
+    insert_apa7_note_after_references_heading(doc)
+    apply_apa7_reference_list(doc)
     blob = "\n".join(p.text for p in doc.paragraphs)
 
     # Public repo URL everywhere
@@ -104,20 +203,22 @@ def main() -> None:
                     break
             break
 
-    # Expanded references (dedupe by distinctive substring)
+    # Extra references in APA 7th edition (dedupe by distinctive substring)
     blob = "\n".join(p.text for p in doc.paragraphs)
     extras_refs = [
-        ("The Scrum Guide", "Schwaber, K. and Sutherland, J. (2020) The Scrum Guide. Available at: https://scrumguides.org/scrum-guide.html (Accessed: 9 April 2026)."),
-        ("prisma.io/docs", "Prisma (2026) Prisma ORM Documentation. Available at: https://www.prisma.io/docs (Accessed: 9 April 2026)."),
-        ("Password Storage Cheat Sheet", "OWASP Foundation (2023) Password Storage Cheat Sheet. Available at: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html (Accessed: 9 April 2026)."),
-        ("WCAG22", "W3C (2023) Web Content Accessibility Guidelines (WCAG) 2.2. Available at: https://www.w3.org/TR/WCAG22/ (Accessed: 9 April 2026)."),
-        ("iucnredlist.org", "IUCN (2024) The IUCN Red List of Threatened Species. Available at: https://www.iucnredlist.org/ (Accessed: 9 April 2026)."),
-        ("Sommerville, I. (2016)", "Sommerville, I. (2016) Software Engineering. 10th edn. Pearson Education."),
-        ("Usability 101", "Nielsen, J. (2012) Usability 101: Introduction to Usability. Nielsen Norman Group. Available at: https://www.nngroup.com/articles/usability-101-introduction-to-usability/ (Accessed: 9 April 2026)."),
+        ("Schwaber, K., & Sutherland", "Schwaber, K., & Sutherland, J. (2020). The scrum guide. Scrum Guides. https://scrumguides.org/scrum-guide.html"),
+        ("Prisma. (2026)", "Prisma. (2026). Prisma ORM documentation. https://www.prisma.io/docs"),
+        ("OWASP Foundation. (2023)", "OWASP Foundation. (2023). Password storage cheat sheet. OWASP Cheat Sheet Series. https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html"),
+        ("W3C. (2023)", "W3C. (2023). Web content accessibility guidelines (WCAG) 2.2. W3C. https://www.w3.org/TR/WCAG22/"),
+        ("IUCN. (2024)", "IUCN. (2024). The IUCN red list of threatened species. https://www.iucnredlist.org/"),
+        ("Sommerville, I. (2016)", "Sommerville, I. (2016). Software engineering (10th ed.). Pearson Education."),
+        ("Nielsen, J. (2012", "Nielsen, J. (2012). Usability 101: Introduction to usability. Nielsen Norman Group. https://www.nngroup.com/articles/usability-101-introduction-to-usability/"),
     ]
     anchor = None
     for p in doc.paragraphs:
-        if p.text.startswith("International Organisation for Standardization"):
+        if p.text.startswith("International Organization for Standardization") or p.text.startswith(
+            "International Organisation for Standardization"
+        ):
             anchor = p
             break
     if anchor:
@@ -148,6 +249,9 @@ def main() -> None:
                 "",
             ]:
                 cur = insert_paragraph_after(cur, line)
+
+    # Second pass: normalise any newly inserted lines that still matched Harvard phrasing
+    apply_apa7_reference_list(doc)
 
     doc.save(out)
     print("Wrote:", out)

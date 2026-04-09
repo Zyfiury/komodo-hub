@@ -66,4 +66,4 @@ npm run screenshots:appendix
 python report_docs/build_submission_docx.py
 ```
 
-That writes PNGs under `report_docs/appendix_screenshots/` and builds `report_docs/Omar_Zakhama_14498572_SUBMIT_READY_SUBMISSION.docx`. These paths are not pushed to GitHub (see `.gitignore`). Requires `python-docx` (`pip install python-docx`).
+That writes PNGs under `report_docs/appendix_screenshots/` and builds `report_docs/Omar_Zakhama_14498572_SUBMIT_READY_SUBMISSION.docx`. The builder formats the **reference list using APA (7th edition)**; apply **hanging indent** to references in Word (Paragraph → Indentation → Special: Hanging) and align in-text citations to APA parenthetical/narrative rules. These paths are not pushed to GitHub (see `.gitignore`). Requires `python-docx` (`pip install python-docx`).
