@@ -7,9 +7,17 @@ Output: Omar_Zakhama_14498572_SUBMIT_READY_SUBMISSION.docx
 from __future__ import annotations
 
 import os
+import re
 import shutil
+import sys
 
 from docx import Document
+from report_cleanup import clean_report_document
+
+_BASE = os.path.dirname(os.path.abspath(__file__))
+if _BASE not in sys.path:
+    sys.path.insert(0, _BASE)
+from body_expansion_text import BODY_EXPANSION_MARKER
 from docx.oxml import OxmlElement
 from docx.shared import Inches
 from docx.text.paragraph import Paragraph
@@ -269,9 +277,24 @@ def apply_apa7_reference_list(doc: Document) -> None:
 
 def main() -> None:
     base = os.path.dirname(os.path.abspath(__file__))
-    src = os.path.join(base, "Omar_Zakhama_14498572_SUBMIT_READY_CITATIONS.docx")
-    if not os.path.isfile(src):
-        src = os.path.join(base, "Omar_Zakhama_14498572_SUBMIT_READY_ENHANCED.docx")
+    cit = os.path.join(base, "Omar_Zakhama_14498572_SUBMIT_READY_CITATIONS.docx")
+    enh = os.path.join(base, "Omar_Zakhama_14498572_SUBMIT_READY_ENHANCED.docx")
+    src = cit
+    if os.path.isfile(cit):
+        try:
+            probe = Document(cit)
+            blob = "\n".join(p.text for p in probe.paragraphs)
+            if BODY_EXPANSION_MARKER not in blob and os.path.isfile(enh):
+                src = enh
+                print(
+                    "Note: CITATIONS file lacks the implementation summary block (or is stale). "
+                    "Using ENHANCED for this build. Close Word and run finalize_report_citations.py to refresh CITATIONS."
+                )
+        except Exception:
+            if os.path.isfile(enh):
+                src = enh
+    elif os.path.isfile(enh):
+        src = enh
     if not os.path.isfile(src):
         src = os.path.join(base, "Omar_Zakhama_14498572_SUBMIT_READY_edited.docx")
     out = os.path.join(base, "Omar_Zakhama_14498572_SUBMIT_READY_SUBMISSION.docx")
@@ -299,6 +322,9 @@ def main() -> None:
     if remove_everything_after_appendices_heading(doc):
         rebuild_appendices_from_scratch(doc, shot_dir, gh)
 
+    clean_stats = clean_report_document(doc)
+    print("Cleanup:", clean_stats)
+
     blob = "\n".join(p.text for p in doc.paragraphs)
     extras_refs = [
         ("Schwaber, K., & Sutherland", "Schwaber, K., & Sutherland, J. (2020). The scrum guide. Scrum Guides. https://scrumguides.org/scrum-guide.html"),
@@ -324,6 +350,22 @@ def main() -> None:
                 blob += line
 
     apply_apa7_reference_list(doc)
+
+    body_parts: list[str] = []
+    for para in doc.paragraphs:
+        if para.text.strip() == "APPENDICES":
+            break
+        body_parts.append(para.text)
+    body_w = len(re.findall(r"[A-Za-z0-9']+", "\n".join(body_parts)))
+    total_w = len(re.findall(r"[A-Za-z0-9']+", "\n".join(p.text for p in doc.paragraphs)))
+    print(f"Body words (before APPENDICES, excludes refs/appendix per typical declaration): {body_w}")
+    print(f"  Approx. pages @300 words/page: {body_w / 300:.1f}")
+    print(f"Total words (entire document): {total_w}")
+    if body_w < 4800:
+        print(
+            "Warning: Module handout targets ~5000 words of narrative (citations excluded). "
+            "Run enhance_report_docx.py from edited source, then finalize_report_citations.py, then this script."
+        )
 
     doc.save(out)
     print("Wrote:", out)

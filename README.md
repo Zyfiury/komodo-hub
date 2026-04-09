@@ -63,7 +63,9 @@ With the dev server running (`npm run dev`) and the database seeded, generate PN
 
 ```bash
 npm run screenshots:appendix
+python report_docs/enhance_report_docx.py
+python report_docs/finalize_report_citations.py
 python report_docs/build_submission_docx.py
 ```
 
-That writes PNGs under `report_docs/appendix_screenshots/` and builds `report_docs/Omar_Zakhama_14498572_SUBMIT_READY_SUBMISSION.docx`. The script **removes everything after the `APPENDICES` heading** (old placeholder appendices) and **rebuilds Appendix A–K** with the correct text and screenshots. References are formatted for **APA (7th edition)**; apply **hanging indent** in Word and align in-text citations to APA. These outputs are not pushed to GitHub (see `.gitignore`). Requires `python-docx` (`pip install python-docx`).
+Close the Word report if either step reports a **file in use** error. `enhance_report_docx.py` adds the **implementation summary** under *Solution priorities* when the body is below the module’s **~5000-word** narrative target (citations excluded, per Talekar handout). `finalize_report_citations.py` must not read from `*SUBMISSION*.docx` sources (only edited/ENHANCED). `build_submission_docx.py` **replaces everything after `APPENDICES`**, **deduplicates** repeated weekly “Omar Zakhama – role – date” lines, and **rebuilds Appendix A–K** with screenshots; it prints **body word count** when it finishes. References are formatted for **APA (7th edition)**; apply **hanging indent** in Word. Outputs stay local (see `.gitignore`). Requires `python-docx` (`pip install python-docx`).
