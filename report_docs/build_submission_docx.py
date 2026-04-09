@@ -278,33 +278,62 @@ def apply_apa7_reference_list(doc: Document) -> None:
 def main() -> None:
     base = os.path.dirname(os.path.abspath(__file__))
     cit = os.path.join(base, "Omar_Zakhama_14498572_SUBMIT_READY_CITATIONS.docx")
+    stg = os.path.join(base, "Omar_Zakhama_14498572_SUBMIT_READY_CITATIONS_STAGING.docx")
     enh = os.path.join(base, "Omar_Zakhama_14498572_SUBMIT_READY_ENHANCED.docx")
     src = cit
+
+    def blob_has_marker(path: str) -> bool:
+        pr = Document(path)
+        return BODY_EXPANSION_MARKER in "\n".join(p.text for p in pr.paragraphs)
+
     if os.path.isfile(cit):
         try:
             probe = Document(cit)
             blob = "\n".join(p.text for p in probe.paragraphs)
-            if BODY_EXPANSION_MARKER not in blob and os.path.isfile(enh):
-                src = enh
-                print(
-                    "Note: CITATIONS file lacks the implementation summary block (or is stale). "
-                    "Using ENHANCED for this build. Close Word and run finalize_report_citations.py to refresh CITATIONS."
-                )
+            if BODY_EXPANSION_MARKER not in blob:
+                if os.path.isfile(stg) and blob_has_marker(stg):
+                    src = stg
+                    print(
+                        "Note: Using CITATIONS_STAGING (main CITATIONS is stale or open in Word). "
+                        "Close Word, delete or replace CITATIONS with STAGING, then rerun finalize_report_citations.py."
+                    )
+                elif os.path.isfile(enh):
+                    src = enh
+                    print(
+                        "Note: CITATIONS file lacks the implementation summary block (or is stale). "
+                        "Using ENHANCED for this build. Close Word and run finalize_report_citations.py to refresh CITATIONS."
+                    )
         except Exception:
-            if os.path.isfile(enh):
+            if os.path.isfile(stg) and blob_has_marker(stg):
+                src = stg
+            elif os.path.isfile(enh):
                 src = enh
+    elif os.path.isfile(stg) and blob_has_marker(stg):
+        src = stg
+        print("Note: Using CITATIONS_STAGING (CITATIONS.docx not found).")
     elif os.path.isfile(enh):
         src = enh
     if not os.path.isfile(src):
         src = os.path.join(base, "Omar_Zakhama_14498572_SUBMIT_READY_edited.docx")
-    out = os.path.join(base, "Omar_Zakhama_14498572_SUBMIT_READY_SUBMISSION.docx")
     shot_dir = os.path.join(base, "appendix_screenshots")
-
-    try:
-        shutil.copy2(src, out)
-    except OSError:
-        out = os.path.join(base, "Omar_Zakhama_14498572_SUBMIT_READY_SUBMISSION_APA7.docx")
-        shutil.copy2(src, out)
+    out_candidates = [
+        os.path.join(base, "Omar_Zakhama_14498572_SUBMIT_READY_SUBMISSION.docx"),
+        os.path.join(base, "Omar_Zakhama_14498572_SUBMIT_READY_SUBMISSION_APA7.docx"),
+        os.path.join(base, "Omar_Zakhama_14498572_SUBMIT_READY_SUBMISSION_BUILD.docx"),
+    ]
+    out = out_candidates[0]
+    last_err: OSError | None = None
+    for candidate in out_candidates:
+        try:
+            shutil.copy2(src, candidate)
+            out = candidate
+            last_err = None
+            break
+        except OSError as e:
+            last_err = e
+            continue
+    if last_err is not None:
+        raise last_err
     doc = Document(out)
     fix_encoding(doc)
     insert_apa7_note_after_references_heading(doc)
