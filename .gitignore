@@ -35,8 +35,9 @@ next-env.d.ts
 /storage
 /prisma/dev.db
 
-# Local / coursework materials (not website code)
-report_docs/
+# Coursework materials (Word/PDF); keep Python builder tracked
+report_docs/**
+!report_docs/build_submission_docx.py
 
 # Word lock files
 ~$*

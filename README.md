@@ -56,3 +56,14 @@ These accounts are created by `prisma/seed.ts` so teachers/students/admins can l
 Public URL: [github.com/Zyfiury/komodo-hub](https://github.com/Zyfiury/komodo-hub)
 
 Clone: `git clone https://github.com/Zyfiury/komodo-hub.git`
+
+### Coursework report screenshots (local only)
+
+With the dev server running (`npm run dev`) and the database seeded, generate PNGs for Word appendices:
+
+```bash
+npm run screenshots:appendix
+python report_docs/build_submission_docx.py
+```
+
+That writes PNGs under `report_docs/appendix_screenshots/` and builds `report_docs/Omar_Zakhama_14498572_SUBMIT_READY_SUBMISSION.docx`. These paths are not pushed to GitHub (see `.gitignore`). Requires `python-docx` (`pip install python-docx`).
