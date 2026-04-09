@@ -1,6 +1,6 @@
 """
-Build submission-ready report: embed appendix screenshots, expand references,
-set public GitHub URL. Requires PNGs from: npm run screenshots:appendix (dev server running).
+Build submission-ready report: APA 7 references, replace appendices entirely with
+correct A-K content + screenshots. Requires PNGs from: npm run screenshots:appendix
 
 Output: Omar_Zakhama_14498572_SUBMIT_READY_SUBMISSION.docx
 """
@@ -30,7 +30,7 @@ def insert_picture_after(paragraph: Paragraph, image_path: str, width_inches: fl
     if os.path.isfile(image_path):
         run.add_picture(image_path, width=Inches(width_inches))
     else:
-        run.add_text(f"[Missing screenshot: {image_path}]")
+        run.add_text(f"[Missing screenshot: run npm run screenshots:appendix — {image_path}]")
     return new_para
 
 
@@ -38,6 +38,142 @@ def fix_encoding(doc: Document) -> None:
     for p in doc.paragraphs:
         if "\ufffd" in p.text:
             p.text = p.text.replace("\ufffd", "'")
+
+
+def remove_everything_after_appendices_heading(doc: Document) -> bool:
+    """Strip old/wrong appendix blocks (paragraphs and tables). Keeps the 'APPENDICES' heading."""
+    target = None
+    for p in doc.paragraphs:
+        if p.text.strip() == "APPENDICES":
+            target = p
+            break
+    if target is None:
+        return False
+    el = target._element
+    parent = el.getparent()
+    nxt = el.getnext()
+    while nxt is not None:
+        cur = nxt
+        nxt = nxt.getnext()
+        parent.remove(cur)
+    return True
+
+
+def rebuild_appendices_from_scratch(doc: Document, shot_dir: str, gh: str) -> None:
+    """Insert correct Appendix A-K with embedded screenshots (after APPENDICES heading)."""
+    target = None
+    for p in doc.paragraphs:
+        if p.text.strip() == "APPENDICES":
+            target = p
+            break
+    if target is None:
+        return
+
+    cur = target
+    gh_display = gh.rstrip(".git")
+
+    def add(text: str = "") -> None:
+        nonlocal cur
+        cur = insert_paragraph_after(cur, text)
+
+    def pic(rel_name: str) -> None:
+        nonlocal cur
+        cur = insert_picture_after(cur, os.path.join(shot_dir, rel_name))
+
+    add(
+        "These appendices replace earlier placeholder material. They provide assessor-facing evidence: "
+        "live screenshots (A to D), repository and run instructions (E to G), and support or integrity statements "
+        "(H to J), with a submission checklist (K) (Talekar, 2025c)."
+    )
+
+    add("Appendix A. Public landing page (working prototype)")
+    add(
+        "Figure A1. Komodo Hub public landing page showing programme context, navigation to library and species content, "
+        "and privacy-aware messaging aligned with the case study (Hapsara, 2023)."
+    )
+    pic("appendix-a-landing.png")
+
+    if os.path.isfile(os.path.join(shot_dir, "appendix-public-library.png")):
+        add(
+            "Figure A2. Public library browse (anonymous access to approved materials only) (Hapsara, 2023)."
+        )
+        pic("appendix-public-library.png")
+
+    add("Appendix B. Teacher dashboard (working prototype)")
+    add(
+        "Figure B1. Teacher dashboard: class and programme actions, progress visibility, messages, and reporting tasks "
+        "(Hapsara, 2023)."
+    )
+    pic("appendix-b-teacher.png")
+
+    add("Appendix C. Moderated wildlife reporting (working prototype)")
+    add(
+        "Figure C1. Wildlife reporting flow: draft and submit for moderation before wider publication; organisation-scoped "
+        "access (Hapsara, 2023)."
+    )
+    pic("appendix-c-wildlife.png")
+
+    add("Appendix D. Foundation administration (working prototype)")
+    add(
+        "Figure D1. Foundation dashboard: organisation overview, moderation entry points, campaigns, and service "
+        "signals (Hapsara, 2023)."
+    )
+    pic("appendix-d-foundation.png")
+
+    add("Appendix E. Repository, diagrams, and configuration")
+    add(f"Public source code: {gh_display}")
+    add(
+        "Diagram sources (UML, DFD, ERD, architecture): store draw.io or exported PNG/SVG in this repository or "
+        "link an OneDrive folder with view access, as required by the module template."
+    )
+    add("Local configuration: copy `.env.example` to `.env` and set `SESSION_SECRET` (minimum 16 characters).")
+
+    add("Appendix F. How to run the application (local, for assessors)")
+    add("Prerequisites: Node.js (LTS), npm, and Git.")
+    add("1) Clone the repository and open the project folder.")
+    add("2) Install dependencies: npm install")
+    add("3) Create `.env` from `.env.example` and set SESSION_SECRET.")
+    add("4) Apply database and seed: npx prisma migrate deploy then npx prisma db seed")
+    add("5) Start the dev server: npm run dev")
+    add("6) Open http://localhost:3000 in a browser.")
+    add("Optional quality checks: npm run lint and npm run build")
+
+    add("Appendix G. Seeded test accounts and demo access code")
+    add("Password for all seeded demonstration accounts: KomodoHub!Dev2026")
+    add("Foundation admin: foundation.admin@komodohub.local")
+    add("School admin: school.admin@komodohub.local")
+    add("Teacher: teacher@komodohub.local")
+    add("Student 1: student1@komodohub.local")
+    add("Student 2: student2@komodohub.local")
+    add("Community admin: community.admin@komodohub.local")
+    add("Community member 1: member1@komodohub.local")
+    add("Community member 2: member2@komodohub.local")
+    add("Demo school access code (student join): SCHOOL-DEMO-2026")
+    add("Anonymous public routes: /library, /campaigns, /species (approved items only).")
+
+    add("Appendix H. Support contact for access issues")
+    add("Replace with your active Coventry University email: [YOUR.COVENTRY.EMAIL@uni.coventry.ac.uk]")
+    add("Markers may use this address for questions about registration, codes, or environment errors.")
+
+    add("Appendix I. Summary of generative AI use")
+    add(
+        "Generative AI assisted with drafting, structuring appendices, APA-style reference formatting, and automation "
+        "for screenshots. Technical descriptions were checked against the implemented application and module PDFs. "
+        "I am responsible for the accuracy of this submission."
+    )
+
+    add("Appendix J. Declaration of originality")
+    add(
+        "I confirm this report and the referenced prototype are my own work except where sources are cited. "
+        "I understand my faculty's regulations on academic integrity."
+    )
+
+    add("Appendix K. Submission checklist (cross-reference)")
+    add("• A to D: screenshots in this document match the running prototype.")
+    add(f"• E: public repository at {gh_display}.")
+    add("• F to G: steps and credentials tested on Windows with Node LTS.")
+    add("• H to J: contact, AI use, and originality completed before upload.")
+    add("• UML/DFD/ERD originals align with files linked or stored per Appendix E (Talekar, 2025c).")
 
 
 def insert_apa7_note_after_references_heading(doc: Document) -> None:
@@ -51,7 +187,6 @@ def insert_apa7_note_after_references_heading(doc: Document) -> None:
 
 
 def convert_existing_reference_line_to_apa7(text: str) -> str | None:
-    """Map known Coventry/Harvard-style lines to APA 7 reference list entries. Returns None if unknown."""
     t = text.strip()
     if not t:
         return None
@@ -89,7 +224,6 @@ def convert_existing_reference_line_to_apa7(text: str) -> str | None:
         )
     if t.startswith("Vercel") and "nextjs.org" in t:
         return "Vercel. (2026). Next.js documentation. https://nextjs.org/docs"
-    # Already APA-shaped lines we added previously — normalise retrieval wording
     if t.startswith("Schwaber, K.") and "scrum guide" in t.lower():
         return (
             "Schwaber, K., & Sutherland, J. (2020). The scrum guide. Scrum Guides. "
@@ -138,6 +272,8 @@ def main() -> None:
     src = os.path.join(base, "Omar_Zakhama_14498572_SUBMIT_READY_CITATIONS.docx")
     if not os.path.isfile(src):
         src = os.path.join(base, "Omar_Zakhama_14498572_SUBMIT_READY_ENHANCED.docx")
+    if not os.path.isfile(src):
+        src = os.path.join(base, "Omar_Zakhama_14498572_SUBMIT_READY_edited.docx")
     out = os.path.join(base, "Omar_Zakhama_14498572_SUBMIT_READY_SUBMISSION.docx")
     shot_dir = os.path.join(base, "appendix_screenshots")
 
@@ -150,9 +286,7 @@ def main() -> None:
     fix_encoding(doc)
     insert_apa7_note_after_references_heading(doc)
     apply_apa7_reference_list(doc)
-    blob = "\n".join(p.text for p in doc.paragraphs)
 
-    # Public repo URL everywhere
     gh = "https://github.com/Zyfiury/komodo-hub.git"
     for p in doc.paragraphs:
         if "[YOUR_USERNAME]" in p.text or "[YOUR_REPO]" in p.text:
@@ -161,49 +295,10 @@ def main() -> None:
                 .replace("[YOUR_USERNAME]/[YOUR_REPO]", "Zyfiury/komodo-hub")
             )
 
-    # Embed screenshots after figure captions
-    mapping = [
-        ("Figure A1.", os.path.join(shot_dir, "appendix-a-landing.png")),
-        ("Figure B1.", os.path.join(shot_dir, "appendix-b-teacher.png")),
-        ("Figure C1.", os.path.join(shot_dir, "appendix-c-wildlife.png")),
-        ("Figure D1.", os.path.join(shot_dir, "appendix-d-foundation.png")),
-    ]
-    for prefix, img in mapping:
-        for i, p in enumerate(doc.paragraphs):
-            if p.text.strip().startswith(prefix):
-                # Avoid duplicate images on re-run
-                nxt_idx = i + 1
-                if nxt_idx < len(doc.paragraphs):
-                    nxt = doc.paragraphs[nxt_idx]
-                    if nxt._element.xpath(".//w:drawing"):
-                        continue
-                insert_picture_after(p, img)
-                break
+    # Replace all legacy appendix content with the correct A-K set + screenshots
+    if remove_everything_after_appendices_heading(doc):
+        rebuild_appendices_from_scratch(doc, shot_dir, gh)
 
-    def _has_drawing(paragraph: Paragraph) -> bool:
-        xml = paragraph._element.xml
-        if isinstance(xml, bytes):
-            return b"drawing" in xml
-        return "drawing" in xml
-
-    # Optional Figure A2: public library after A1 image
-    lib_img = os.path.join(shot_dir, "appendix-public-library.png")
-    if os.path.isfile(lib_img) and "Figure A2." not in blob:
-        for i, p in enumerate(doc.paragraphs):
-            if not p.text.strip().startswith("Figure A1."):
-                continue
-            # paragraph after A1 caption that contains the screenshot
-            for j in range(i + 1, min(i + 5, len(doc.paragraphs))):
-                if _has_drawing(doc.paragraphs[j]):
-                    cap = insert_paragraph_after(doc.paragraphs[j], "")
-                    cap.add_run(
-                        "Figure A2. Public library browse (anonymous access to approved materials) (Hapsara, 2023)."
-                    )
-                    insert_picture_after(cap, lib_img)
-                    break
-            break
-
-    # Extra references in APA 7th edition (dedupe by distinctive substring)
     blob = "\n".join(p.text for p in doc.paragraphs)
     extras_refs = [
         ("Schwaber, K., & Sutherland", "Schwaber, K., & Sutherland, J. (2020). The scrum guide. Scrum Guides. https://scrumguides.org/scrum-guide.html"),
@@ -228,29 +323,6 @@ def main() -> None:
                 cur = insert_paragraph_after(cur, line)
                 blob += line
 
-    # Appendix K at end of document (after all other appendices)
-    blob = "\n".join(p.text for p in doc.paragraphs)
-    if "Appendix K. Supplementary evidence" not in blob:
-        anchor_end = None
-        for p in reversed(doc.paragraphs):
-            if p.text.strip():
-                anchor_end = p
-                break
-        if anchor_end is not None:
-            cur = anchor_end
-            for line in [
-                "",
-                "Appendix K. Supplementary evidence list (submission checklist)",
-                "• A to D: live prototype screenshots (embedded in this document).",
-                "• E: public source repository and configuration template.",
-                "• F to G: execution steps and seeded role credentials for assessors.",
-                "• H to J: contact, AI use, and originality.",
-                "• Diagram sources (UML/DFD/ERD) should match files stored in the repository or linked OneDrive as described in Appendix E (Talekar, 2025c).",
-                "",
-            ]:
-                cur = insert_paragraph_after(cur, line)
-
-    # Second pass: normalise any newly inserted lines that still matched Harvard phrasing
     apply_apa7_reference_list(doc)
 
     doc.save(out)
