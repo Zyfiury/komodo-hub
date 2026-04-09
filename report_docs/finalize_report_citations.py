@@ -25,20 +25,14 @@ def insert_paragraph_after(paragraph: Paragraph, text: str) -> Paragraph:
     return new_para
 
 
-def fix_mojibake(text: str) -> str:
-    return text.replace("\ufffd", "'").replace("Appendices AD", "Appendices A–D")
-
-
 def pick_source_docx() -> str:
-    base = os.path.join(os.path.dirname(__file__))
-    cands = [
-        os.path.join(base, "Omar_Zakhama_14498572_SUBMIT_READY_ENHANCED.docx"),
-        os.path.join(base, "Omar_Zakhama_14498572_SUBMIT_READY_edited.docx"),
-    ]
-    existing = [c for c in cands if os.path.isfile(c)]
-    if not existing:
-        raise FileNotFoundError("No Omar_Zakhama*.docx found in report_docs (excluding path).")
-    return max(existing, key=os.path.getmtime)
+    base = os.path.dirname(__file__)
+    cands = glob.glob(os.path.join(base, "Omar_Zakhama_14498572_SUBMIT_READY*.docx"))
+    skip = ("BACKUP", "CITATIONS")
+    cands = [c for c in cands if os.path.isfile(c) and not any(s in c for s in skip)]
+    if not cands:
+        raise FileNotFoundError("No suitable Omar_Zakhama*SUBMIT_READY*.docx (use ENHANCED or edited).")
+    return max(cands, key=os.path.getmtime)
 
 
 def main() -> None:
@@ -66,11 +60,11 @@ def main() -> None:
                     "Appendices I–J."
                 )
         if p.text.startswith("Figures in Appendices") and "repository README" in p.text:
-            p.text = (
-                "Figures in Appendices A–D provide screenshot evidence aligned with the prototype narrative above "
-                "(Hapsara, 2023). Step-by-step execution for assessors is in Appendix F; credentials in Appendix G "
-                "(Talekar, 2025c)."
-            )
+                p.text = (
+                    "Figures in Appendices A to D provide screenshot evidence aligned with the prototype narrative above "
+                    "(Hapsara, 2023). Step-by-step execution for assessors is in Appendix F; credentials in Appendix G "
+                    "(Talekar, 2025c)."
+                )
 
     # --- Cloud / architecture sentences ---
     for p in doc.paragraphs:
@@ -92,8 +86,8 @@ def main() -> None:
         if p.text.startswith("This report outlines a full eight-week Scrum cycle"):
             if "Evidence packaging for assessment" not in p.text:
                 p.text += (
-                    " Evidence packaging for assessment follows Appendices A–J: user-facing screenshots (A–D), "
-                    "repository and runbook (E–F), test accounts (G), support email (H), AI use (I), and originality (J) "
+                    " Evidence packaging for assessment follows Appendices A to J: user-facing screenshots (A to D), "
+                    "repository and runbook (E to F), test accounts (G), support email (H), AI use (I), and originality (J) "
                     "(Talekar, 2025c)."
                 )
 
@@ -113,8 +107,8 @@ def main() -> None:
                 j += 1
             nxt = doc.paragraphs[j] if j < len(doc.paragraphs) else None
             intro = (
-                "The appendices below are referenced from the sprint sections and conclusion. A–D illustrate the working "
-                "prototype; E–G satisfy repository, execution, and credential requirements; H–J cover support, AI use, "
+                "The appendices below are referenced from the sprint sections and conclusion. Appendices A to D illustrate the working "
+                "prototype; E to G satisfy repository, execution, and credential requirements; H to J cover support, AI use, "
                 "and academic integrity (Talekar, 2025c)."
             )
             if nxt and nxt.text.strip().startswith("Appendix A"):

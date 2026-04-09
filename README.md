@@ -51,6 +51,18 @@ These accounts are created by `prisma/seed.ts` so teachers/students/admins can l
 - Public pages: `/library`, `/campaigns`, `/species` (approved items only).
 - Protected dashboards enforce role + organisation boundaries.
 
+## Publishing to GitHub (coursework)
+
+This folder is a Git repository. Create an empty **public** repository under your GitHub account, then connect and push (replace `YOUR_USER` and `YOUR_REPO`):
+
+```bash
+git remote add origin https://github.com/YOUR_USER/YOUR_REPO.git
+git branch -M main
+git push -u origin main
+```
+
+Your personal report Word files and module PDFs in `report_docs/` are intentionally **not** tracked (see `.gitignore`) so the public repo stays assessor-friendly and smaller.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
