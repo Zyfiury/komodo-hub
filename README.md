@@ -57,9 +57,10 @@ This folder is a Git repository. Create an empty **public** repository under you
 
 ```bash
 git remote add origin https://github.com/YOUR_USER/YOUR_REPO.git
-git branch -M main
-git push -u origin main
+git push -u origin master
 ```
+
+To use the branch name `main` instead, run `git branch -M main` before the push and push `main`.
 
 Your personal report Word files and module PDFs in `report_docs/` are intentionally **not** tracked (see `.gitignore`) so the public repo stays assessor-friendly and smaller.
 
