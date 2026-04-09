@@ -57,15 +57,4 @@ Public URL: [github.com/Zyfiury/komodo-hub](https://github.com/Zyfiury/komodo-hu
 
 Clone: `git clone https://github.com/Zyfiury/komodo-hub.git`
 
-### Coursework report screenshots (local only)
-
-With the dev server running (`npm run dev`) and the database seeded, generate PNGs for Word appendices:
-
-```bash
-npm run screenshots:appendix
-python report_docs/enhance_report_docx.py
-python report_docs/finalize_report_citations.py
-python report_docs/build_submission_docx.py
-```
-
-Close the Word report if either step reports a **file in use** error. If `finalize_report_citations.py` writes `*_CITATIONS_STAGING.docx`, close Word, replace the main `*_CITATIONS.docx` with that file (or rerun finalize), then run the builder again. `enhance_report_docx.py` adds the **implementation summary** under *Solution priorities* when the body is below the module’s **~5000-word** narrative target (citations excluded, per Talekar handout). `finalize_report_citations.py` must not read from `*SUBMISSION*.docx` sources (only edited/ENHANCED). `build_submission_docx.py` **replaces everything after `APPENDICES`**, **deduplicates** repeated weekly “Omar Zakhama – role – date” lines, and **rebuilds Appendix A–K** with screenshots; it prints **body word count** when it finishes. References are formatted for **APA (7th edition)**; apply **hanging indent** in Word. Outputs stay local (see `.gitignore`). Requires `python-docx` (`pip install python-docx`).
+This repository tracks **the application only**. Coursework report files, Word/PDFs, and appendix screenshot tooling live in a local `report_docs/` folder (ignored by Git) if you use them on your machine.

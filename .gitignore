@@ -35,14 +35,11 @@ next-env.d.ts
 /storage
 /prisma/dev.db
 
-# Coursework materials (Word/PDF); keep report Python pipeline tracked
-report_docs/**
-!report_docs/build_submission_docx.py
-!report_docs/body_expansion_text.py
-!report_docs/enhance_report_docx.py
-!report_docs/finalize_report_citations.py
-!report_docs/report_cleanup.py
-!report_docs/analyze_report.py
+# Coursework / report materials (local only — not part of the website)
+report_docs/
+
+# Appendix screenshot helper (coursework; keep locally)
+/scripts/
 
 # Word lock files
 ~$*
